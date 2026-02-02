@@ -1,0 +1,8 @@
+streamlit
+requests
+opencv-python-headless
+numpy
+ultralytics
+folium
+streamlit-folium
+polyline
