@@ -2,14 +2,14 @@
 
 Real-time traffic analysis using YOLOv8 computer vision on Ontario 511 highway feeds.
 
-## 🎯 Features
+## Features
 
 - **YOLOv8 Object Detection** — Vehicles, trucks, buses in real-time
 - **Traffic Density Analysis** — Calculate congestion levels per lane
 - **OSRM Integration** — Adaptive routing based on traffic weight
 - **Live Dashboard** — Streamlit-based web interface
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
 # Install dependencies
@@ -25,7 +25,7 @@ python src/analyze.py --source data/sample.mp4
 streamlit run src/dashboard.py
 ```
 
-## 📊 Demo
+## Demo
 
 ```bash
 # Process Ontario 511 feed
@@ -33,7 +33,7 @@ python src/fetch_511.py --region 401
 python src/analyze.py --source output/401_feed.mp4
 ```
 
-## 🛠 Tech Stack
+## Tech Stack
 
 - **YOLOv8** — Ultralytics object detection
 - **OpenCV** — Video processing
@@ -41,7 +41,7 @@ python src/analyze.py --source output/401_feed.mp4
 - **Streamlit** — Dashboard UI
 - **Python 3.10+**
 
-## 📁 Structure
+## Structure
 
 ```
 ├── src/
@@ -56,7 +56,7 @@ python src/analyze.py --source output/401_feed.mp4
 └── output/              # Analysis results
 ```
 
-## 📈 Sample Output
+## Sample Output
 
 | Metric | Value |
 |--------|-------|
@@ -65,12 +65,12 @@ python src/analyze.py --source output/401_feed.mp4
 | Density | Medium |
 | Congestion Score | 0.3 |
 
-## 🔗 Links
+## Links
 
 - [Ontario 511](https://511on.ca/)
 - [OSRM Documentation](http://project-osrm.org/)
 - [YOLOv8 Docs](https://docs.ultralytics.com/)
 
-## 📄 License
+## License
 
 MIT
