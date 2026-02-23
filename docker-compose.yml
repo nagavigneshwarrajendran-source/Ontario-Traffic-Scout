@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  traffic-scout:
+    build: .
+    container_name: traffic-scout-demo
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+      - ./output:/app/output
+    environment:
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
+    restart: unless-stopped
+
+  # Sample video generator for demo
+  video-source:
+    image: alpine:latest
+    container_name: traffic-video-source
+    command: >
+      sh -c "
+        mkdir -p /shared/samples &&
+        echo 'Sample video data available' > /shared/samples/README.txt &&
+        tail -f /dev/null
+      "
+    volumes:
+      - video-data:/shared
+
+volumes:
+  video-data:
