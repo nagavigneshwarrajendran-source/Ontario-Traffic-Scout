@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ontario Traffic Scout - Live Demo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0a0e17;
+      color: #e4e4ef;
+      min-height: 100vh;
+    }
+    .header {
+      background: linear-gradient(135deg, #0f1629 0%, #1a1d2e 100%);
+      padding: 20px 40px;
+      border-bottom: 1px solid #2d3748;
+    }
+    .header h1 {
+      font-size: 1.8rem;
+      background: linear-gradient(90deg, #00ffc8, #00b4d8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .header p { color: #7a7d95; margin-top: 5px; }
+    
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      padding: 30px 40px;
+      background: #0f1117;
+    }
+    .metric-card {
+      background: linear-gradient(135deg, #1a1d2e 0%, #0f1629 100%);
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid #2d3748;
+    }
+    .metric-label { color: #7a7d95; font-size: 0.85rem; text-transform: uppercase; }
+    .metric-value { font-size: 2rem; font-weight: bold; color: #00ffc8; margin-top: 8px; }
+    .metric-change { font-size: 0.8rem; margin-top: 4px; }
+    .positive { color: #22c55e; }
+    .negative { color: #ef4444; }
+    
+    .main-content {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 30px;
+      padding: 30px 40px;
+    }
+    
+    .video-feed {
+      background: #1a1d2e;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #2d3748;
+    }
+    .video-header {
+      padding: 15px 20px;
+      background: #0f1629;
+      border-bottom: 1px solid #2d3748;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .live-badge {
+      background: #ef4444;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    .video-canvas {
+      width: 100%;
+      height: 400px;
+      background: linear-gradient(180deg, #87ceeb 0%, #e0e0e0 40%, #555 40%, #333 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    .road {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60%;
+      background: linear-gradient(180deg, #444 0%, #222 100%);
+    }
+    .lane-marker {
+      position: absolute;
+      bottom: 30%;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: repeating-linear-gradient(90deg, #fff 0px, #fff 40px, transparent 40px, transparent 80px);
+    }
+    .vehicle {
+      position: absolute;
+      border-radius: 4px;
+      transition: all 0.1s linear;
+    }
+    .vehicle.car { width: 50px; height: 28px; }
+    .vehicle.truck { width: 70px; height: 35px; }
+    .vehicle.bus { width: 90px; height: 38px; }
+    .vehicle-label {
+      position: absolute;
+      top: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      color: #00ffc8;
+      background: rgba(0,0,0,0.8);
+      padding: 2px 6px;
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+    
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .panel {
+      background: #1a1d2e;
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid #2d3748;
+    }
+    .panel h3 {
+      font-size: 0.9rem;
+      color: #7a7d95;
+      text-transform: uppercase;
+      margin-bottom: 15px;
+    }
+    .detection-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #2d3748;
+    }
+    .detection-item:last-child { border-bottom: none; }
+    .detection-type { color: #e4e4ef; }
+    .detection-count { 
+      background: #00ffc8; 
+      color: #000; 
+      padding: 2px 10px; 
+      border-radius: 12px; 
+      font-weight: bold;
+      font-size: 0.85rem;
+    }
+    
+    .congestion-meter {
+      margin-top: 15px;
+    }
+    .meter-bar {
+      height: 20px;
+      background: #2d3748;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+    .meter-fill {
+      height: 100%;
+      border-radius: 10px;
+      transition: width 0.5s ease;
+    }
+    .meter-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 5px;
+      font-size: 0.75rem;
+      color: #7a7d95;
+    }
+    
+    .routing-card {
+      background: linear-gradient(135deg, #1a1d2e 0%, #0f1629 100%);
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 10px;
+      border-left: 4px solid #22c55e;
+    }
+    .routing-card.warning {
+      border-left-color: #f59e0b;
+    }
+    .route-name { font-weight: bold; color: #e4e4ef; }
+    .route-status { font-size: 0.85rem; color: #7a7d95; margin-top: 4px; }
+    .route-time { color: #00ffc8; font-weight: bold; }
+    
+    .chart-container {
+      grid-column: 1 / -1;
+      background: #1a1d2e;
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid #2d3748;
+    }
+    .chart-canvas {
+      width: 100%;
+      height: 200px;
+      margin-top: 15px;
+    }
+    
+    .footer {
+      text-align: center;
+      padding: 20px;
+      color: #7a7d95;
+      font-size: 0.85rem;
+      border-top: 1px solid #2d3748;
+      margin-top: 20px;
+    }
+    
+    @media (max-width: 900px) {
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .main-content { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Ontario Traffic Scout</h1>
+    <p>Real-time traffic analysis using YOLOv8 Computer Vision</p>
+  </div>
+  
+  <div class="metrics">
+    <div class="metric-card">
+      <div class="metric-label">Vehicles / Minute</div>
+      <div class="metric-value" id="vpm">42</div>
+      <div class="metric-change positive">+5% vs last hour</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Average Speed</div>
+      <div class="metric-value" id="speed">82</div>
+      <div class="metric-change negative">-3% vs last hour</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Traffic Density</div>
+      <div class="metric-value" style="font-size: 1.5rem;" id="density">Medium</div>
+      <div class="metric-change">Stable</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">System Status</div>
+      <div class="metric-value" style="color: #22c55e;">Online</div>
+      <div class="metric-change positive">YOLOv8 Active</div>
+    </div>
+  </div>
+  
+  <div class="main-content">
+    <div class="video-feed">
+      <div class="video-header">
+        <span style="color: #7a7d95;">Highway 401 West - Live Feed</span>
+        <span class="live-badge">LIVE</span>
+      </div>
+      <div class="video-canvas" id="videoCanvas">
+        <div class="road"></div>
+        <div class="lane-marker"></div>
+        <!-- Vehicles will be added by JavaScript -->
+      </div>
+    </div>
+    
+    <div class="sidebar">
+      <div class="panel">
+        <h3>Detection Summary</h3>
+        <div class="detection-item">
+          <span class="detection-type">Cars</span>
+          <span class="detection-count" id="carCount">3</span>
+        </div>
+        <div class="detection-item">
+          <span class="detection-type">Trucks</span>
+          <span class="detection-count" id="truckCount">1</span>
+        </div>
+        <div class="detection-item">
+          <span class="detection-type">Buses</span>
+          <span class="detection-count" id="busCount">0</span>
+        </div>
+        <div class="detection-item">
+          <span class="detection-type">Motorcycles</span>
+          <span class="detection-count" id="motoCount">1</span>
+        </div>
+      </div>
+      
+      <div class="panel">
+        <h3>Congestion Analysis</h3>
+        <div class="congestion-meter">
+          <div class="meter-bar">
+            <div class="meter-fill" id="congestionBar" style="width: 35%; background: linear-gradient(90deg, #22c55e, #f59e0b);"></div>
+          </div>
+          <div class="meter-labels">
+            <span>Low</span>
+            <span>Medium</span>
+            <span>High</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="panel">
+        <h3>Routing Recommendations</h3>
+        <div class="routing-card">
+          <div class="route-name">401 Eastbound</div>
+          <div class="route-status">Clear conditions</div>
+          <div class="route-time">18 min to destination</div>
+        </div>
+        <div class="routing-card warning" style="margin-top: 10px;">
+          <div class="route-name">401 Westbound</div>
+          <div class="route-status">Moderate traffic ahead</div>
+          <div class="route-time">24 min (+6 min delay)</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="chart-container">
+      <h3 style="color: #7a7d95; font-size: 0.9rem; text-transform: uppercase;">Traffic History - Last Hour</h3>
+      <canvas id="trafficChart" class="chart-canvas"></canvas>
+    </div>
+  </div>
+  
+  <div class="footer">
+    <p>Ontario Traffic Scout Demo | Built with YOLOv8 + OpenCV + OSRM</p>
+    <p style="margin-top: 5px; font-size: 0.75rem;">by Nagavigneshwar Rajendran</p>
+  </div>
+
+  <script>
+    // Vehicle simulation
+    const vehicles = [];
+    const vehicleTypes = ['car', 'truck', 'bus', 'motorcycle'];
+    const colors = {
+      car: ['#e74c3c', '#3498db', '#f39c12', '#9b59b6', '#1abc9c'],
+      truck: '#5d6d7e',
+      bus: '#e67e22',
+      motorcycle: '#34495e'
+    };
+    
+    function createVehicle() {
+      const type = vehicleTypes[Math.floor(Math.random() * vehicleTypes.length)];
+      const vehicle = document.createElement('div');
+      vehicle.className = `vehicle ${type}`;
+      vehicle.style.background = Array.isArray(colors[type]) ? 
+        colors[type][Math.floor(Math.random() * colors[type].length)] : colors[type];
+      vehicle.style.left = '-100px';
+      vehicle.style.top = (45 + Math.random() * 40) + '%';
+      
+      const label = document.createElement('div');
+      label.className = 'vehicle-label';
+      label.textContent = `${type} ${(Math.random() * 0.3 + 0.7).toFixed(2)}`;
+      vehicle.appendChild(label);
+      
+      document.getElementById('videoCanvas').appendChild(vehicle);
+      
+      return {
+        element: vehicle,
+        x: -100,
+        speed: Math.random() * 3 + 2,
+        type: type
+      };
+    }
+    
+    function updateVehicles() {
+      // Add new vehicle occasionally
+      if (Math.random() < 0.02 && vehicles.length < 8) {
+        vehicles.push(createVehicle());
+      }
+      
+      // Update positions
+      for (let i = vehicles.length - 1; i >= 0; i--) {
+        const v = vehicles[i];
+        v.x += v.speed;
+        v.element.style.left = v.x + 'px';
+        
+        // Remove if off screen
+        if (v.x > window.innerWidth) {
+          v.element.remove();
+          vehicles.splice(i, 1);
+        }
+      }
+      
+      // Update counts
+      const counts = { car: 0, truck: 0, bus: 0, motorcycle: 0 };
+      vehicles.forEach(v => counts[v.type]++);
+      document.getElementById('carCount').textContent = counts.car;
+      document.getElementById('truckCount').textContent = counts.truck;
+      document.getElementById('busCount').textContent = counts.bus;
+      document.getElementById('motoCount').textContent = counts.motorcycle;
+      
+      // Update metrics
+      const vpm = Math.floor(35 + Math.random() * 15);
+      document.getElementById('vpm').textContent = vpm;
+      document.getElementById('speed').textContent = Math.floor(75 + Math.random() * 15);
+    }
+    
+    setInterval(updateVehicles, 50);
+    
+    // Chart drawing
+    const canvas = document.getElementById('trafficChart');
+    const ctx = canvas.getContext('2d');
+    canvas.width = canvas.offsetWidth;
+    canvas.height = 200;
+    
+    function drawChart() {
+      ctx.fillStyle = '#1a1d2e';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Generate data points
+      const points = [];
+      for (let i = 0; i <= 12; i++) {
+        points.push(30 + Math.random() * 40);
+      }
+      
+      // Draw line
+      ctx.beginPath();
+      ctx.strokeStyle = '#00ffc8';
+      ctx.lineWidth = 3;
+      
+      const step = canvas.width / 12;
+      points.forEach((y, i) => {
+        const x = i * step;
+        const canvasY = canvas.height - (y / 100 * canvas.height);
+        if (i === 0) ctx.moveTo(x, canvasY);
+        else ctx.lineTo(x, canvasY);
+      });
+      
+      ctx.stroke();
+      
+      // Draw gradient fill
+      ctx.lineTo(canvas.width, canvas.height);
+      ctx.lineTo(0, canvas.height);
+      ctx.closePath();
+      
+      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      gradient.addColorStop(0, 'rgba(0, 255, 200, 0.3)');
+      gradient.addColorStop(1, 'rgba(0, 255, 200, 0)');
+      ctx.fillStyle = gradient;
+      ctx.fill();
+      
+      // Draw points
+      points.forEach((y, i) => {
+        const x = i * step;
+        const canvasY = canvas.height - (y / 100 * canvas.height);
+        ctx.beginPath();
+        ctx.arc(x, canvasY, 4, 0, Math.PI * 2);
+        ctx.fillStyle = '#00ffc8';
+        ctx.fill();
+      });
+    }
+    
+    drawChart();
+    setInterval(drawChart, 3000);
+  </script>
+</body>
+</html>
